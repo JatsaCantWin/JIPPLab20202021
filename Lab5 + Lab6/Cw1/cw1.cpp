@@ -6,9 +6,25 @@ using namespace std;
 
 int matrixVal;
 
-static int loadVal(void *NotUsed, int argc, char **argv, char **azColName) {
-	matrixVal=atoi(argv[0]);
-	return 0;
+static int loadVal(void *NotUsed, int argc, char **argv, char **azColName) 
+{
+	try
+	{
+		matrixVal=atoi(argv[0]);
+		if ((argv[0][0]!='0')&&(matrixVal==0))
+			throw "Blad konwersji danych przy wyciagniu ich z bazy";
+		return 0;	
+	}
+	catch (const char* err)
+	{
+		cout << err << endl;
+		return -1;
+	}
+	catch (...)
+	{
+		cout << "Nie udalo sie wyciagnac danej z bazy" << endl;
+		return -1;
+	}
 }
 
 class Matrix
@@ -34,120 +50,247 @@ class Matrix
 
 Matrix::Matrix(int x, int y)
 {
-    matrixValues = new double[x*y*sizeof(double)];
-    height = x; width = y;
-    for (int i=0; i<x*y; i++)
-        matrixValues[i]=0;
+    try
+    {
+    	matrixValues = new double[x*y*sizeof(double)];
+    	if (matrixValues == NULL)
+			throw "Nie udalo sie zarezerwowac pamieci dla wartosci macierzy";
+    	height = x; width = y;
+    	for (int i=0; i<x*y; i++)
+	    	matrixValues[i]=0;	
+	}
+	catch (const char* err)
+	{
+		cout << err << endl;
+	}
+	catch (...)
+	{
+		cout << "Nie udalo sie utworzyc macierzy" << endl;
+	}
 }
 
 Matrix::Matrix(int x)
 {
-    matrixValues = new double[x*x*sizeof(double)];
-    height = x; width = x;
-    for (int i=0; i<x*x; i++)
-        matrixValues[i]=0;
+	try 
+	{
+		matrixValues = new double[x*x*sizeof(double)];
+  		if (matrixValues == NULL)
+  			throw "Nie udalo sie zarezerwowac pamieci dla wartosci macierzy";
+		height = x; width = x;
+    	for (int i=0; i<x*x; i++)
+        	matrixValues[i]=0;	
+	}
+	catch (const char* err)
+	{
+		cout << err << endl;
+	}
+	catch (...)
+	{
+		cout << "Nie udalo sie utworzyc macierzy" << endl;
+	}
 }
 
 Matrix::Matrix(string filePath, int matrixID)
 {
-	sqlite3 *db;
-	sqlite3_open(filePath.c_str(), &db);
-	string sql;
-	sql = "SELECT Height FROM MatrixSize WHERE ID="+to_string(matrixID);
-	sqlite3_exec(db, sql.c_str(), loadVal, 0, NULL);
-	height=matrixVal;
-	sql = "SELECT Width FROM MatrixSize WHERE ID="+to_string(matrixID);
-	width=matrixVal;
-	sqlite3_exec(db, sql.c_str(), loadVal, 0, NULL);
-	for (int i=0; i<height*width; i++)
+	try
 	{
-		sql = "SELECT Field_Value FROM MatrixFields WHERE ID = "+to_string(matrixID)+" AND Field_ID = "+to_string(i);
-		sqlite3_exec(db, sql.c_str(), loadVal, 0, NULL);
-		matrixValues[i]=matrixVal;
-    }
-     sqlite3_close(db);
+		sqlite3 *db;
+		sqlite3_open(filePath.c_str(), &db);
+		if (db == NULL)
+			throw "Nie udalo sie otworzyc bazy danych";
+		string sql;
+		sql = "SELECT Height FROM MatrixSize WHERE ID="+to_string(matrixID);
+		if (sqlite3_exec(db, sql.c_str(), loadVal, 0, NULL)!=0)
+			throw "Nie udalo sie wykonac polecenia SQL";
+		height=matrixVal;
+		sql = "SELECT Width FROM MatrixSize WHERE ID="+to_string(matrixID);
+		width=matrixVal;
+		if (sqlite3_exec(db, sql.c_str(), loadVal, 0, NULL)!=0)
+			throw "Nie udalo sie wykonac polecenia SQL";
+		for (int i=0; i<height*width; i++)
+		{
+			sql = "SELECT Field_Value FROM MatrixFields WHERE ID = "+to_string(matrixID)+" AND Field_ID = "+to_string(i);
+			if (sqlite3_exec(db, sql.c_str(), loadVal, 0, NULL)!=0)
+				throw "Nie udalo sie wykonac polecenia SQL";
+			matrixValues[i]=matrixVal;
+	    }
+	    sqlite3_close(db);	
+	}
+	catch (const char* err)
+	{
+		cout << err << endl;
+	}
+	catch (...)
+	{
+		cout << "Nie udalo sie utworzyc macierzy" << endl;
+	}
 }
 
 void Matrix::set(int n, int m, double val)
 {
-    matrixValues[n*width+m] = val;
+	try
+	{
+		matrixValues[n*width+m] = val;	
+	}
+	catch (...)
+	{
+		cout << "Nie udalo sie ustawic wartosci w macierzy" << endl;
+	}
 }
 
 double Matrix::get(int n, int m)
 {
-    return matrixValues[n*width+m];
+	try
+	{
+		return matrixValues[n*width+m];	
+	}
+	catch (...)
+	{
+		cout << "Nie udalo sie wyciagnac wartosci z macierzy" << endl;
+	}
 }
 
 Matrix Matrix::add(Matrix m2)
 {
-    Matrix result(height, width);
-    for (int i=0; i<height; i++)
-        for (int j=0; j<width; j++)
-            result.set(i, j, get(i, j)+m2.get(i, j));
-    return result;
+	try
+	{
+		Matrix result(height, width);
+	    for (int i=0; i<height; i++)
+	        for (int j=0; j<width; j++)
+	            result.set(i, j, get(i, j)+m2.get(i, j));
+	    return result;
+	}
+    catch (...)
+	{
+		cout << "Nie udalo sie dodac dwoch macierzy" << endl;
+		return NULL;
+	}
 }
 
 Matrix Matrix::subtract(Matrix m2)
 {
-    Matrix result(height, width);
-    for (int i=0; i<height; i++)
-        for (int j=0; j<width; j++)
-            result.set(i, j, get(i, j)-m2.get(i, j));
-    return result;
+	try
+	{
+		Matrix result(height, width);
+	    for (int i=0; i<height; i++)
+	        for (int j=0; j<width; j++)
+	            result.set(i, j, get(i, j)-m2.get(i, j));
+	    return result;	
+	}
+    catch (...)
+	{
+		cout << "Nie udalo sie odjac dwoch macierzy" << endl;
+		return NULL;
+	}
 }
 
 double Matrix::multiplyRowAndColumn(int n, int m, Matrix m2)
 {
-    double result = 0;
-    for (int i=0; i<width; i++)
-        result+= get(n, i)*m2.get(i, m);
-    return result;
+	try
+	{
+		double result = 0;
+	    for (int i=0; i<width; i++)
+	        result+= get(n, i)*m2.get(i, m);
+	    return result;	
+	}
+    catch (...)
+	{
+		cout << "Nie udalo sie przemnozyc kolumny jednej macierzy przez rzad drugiej" << endl;
+		return 0;
+	}
 }
 
 Matrix Matrix::multiply(Matrix m2)
 {
-    Matrix result(m2.width, height);
-    for (int i=0; i<result.height; i++)
-        for (int j=0; j<result.width; j++)
-            result.set(i, j, multiplyRowAndColumn(i, j, m2));
-    return result;
+	try
+	{
+		Matrix result(m2.width, height);
+	    for (int i=0; i<result.height; i++)
+	        for (int j=0; j<result.width; j++)
+	            result.set(i, j, multiplyRowAndColumn(i, j, m2));
+	    return result;	
+	}
+	catch (...)
+	{
+		cout << "Nie udalo sie przemnozyc dwoch macierzy" << endl;
+		return NULL;
+	}
 }
 
 int Matrix::cols()
 {
-    return width;
+	try
+	{
+		return width;
+	}
+	catch (...)
+	{
+		cout << "Nie udalo sie uzyskac liczby kolumn macierzy" << endl;
+		return -1;
+	}
 }
 
 int Matrix::rows()
 {
-    return height;
+	try
+	{
+		return height;	
+	}
+	catch (...)
+	{
+		cout << "Nie udalo sie uzyskac liczby wierszy macierzy" << endl;
+		return -1;
+	}
 }
 
 void Matrix::print()
 {
-    for (int i=0; i<height; i++)
-    {
-        for (int j=0; j<width; j++)
-            cout << get(i, j) << " ";
-        cout << endl;
-    }
+	try
+	{
+		for (int i=0; i<height; i++)
+	    {
+	        for (int j=0; j<width; j++)
+	            cout << get(i, j) << " ";
+	        cout << endl;
+	    }	
+	}
+	catch (...)
+	{
+		cout << "Nie udalo sie wypisac wartosci macierzy" << endl;
+	}
 }
 
 void Matrix::store(char* filePath)
 {
-	sqlite3 *db;
-	sqlite3_open(filePath, &db);
-	string sql;
-	sql = "INSERT INTO MatrixSize (Height, Width) VALUES ("+to_string(height)+", "+to_string(width)+")";
-   	sqlite3_exec(db, sql.c_str(), NULL, 0, NULL);
-   	sql = "SELECT ID FROM MatrixSize WHERE id=(SELECT max(ID) FROM MatrixSize)";
-   	sqlite3_exec(db, sql.c_str(), loadVal, 0, NULL);
-    for (int i=0; i<height*width; i++)
-    {
-		sql = "INSERT INTO MatrixFields VALUES ("+to_string(matrixVal)+", "+to_string(i)+", "+to_string(matrixValues[i])+")";
-		sqlite3_exec(db, sql.c_str(), NULL, 0, NULL);
-    }
-     sqlite3_close(db);
+	try
+	{
+		sqlite3 *db;
+		sqlite3_open(filePath, &db);
+		if (db == NULL)
+			throw "Nie udalo sie otworzyc bazy danych";
+		string sql;
+		sql = "INSERT INTO MatrixSize (Height, Width) VALUES ("+to_string(height)+", "+to_string(width)+")";
+	   	if (sqlite3_exec(db, sql.c_str(), NULL, 0, NULL)!=0)
+	   		throw "Nie udalo sie wykonac polecenia SQL";
+	   	sql = "SELECT ID FROM MatrixSize WHERE id=(SELECT max(ID) FROM MatrixSize)";
+	   	if (sqlite3_exec(db, sql.c_str(), loadVal, 0, NULL)!=0)
+	   		throw "Nie udalo sie wykonac polecenia SQL";
+	    for (int i=0; i<height*width; i++)
+	    {
+			sql = "INSERT INTO MatrixFields VALUES ("+to_string(matrixVal)+", "+to_string(i)+", "+to_string(matrixValues[i])+")";
+			if (sqlite3_exec(db, sql.c_str(), NULL, 0, NULL)!=0)
+				throw "Nie udalo sie wykonac polecenia SQL";
+	    }
+	    sqlite3_close(db);	
+	}
+	catch (const char* err)
+	{
+		cout << err << endl;
+	}
+	catch (...)
+	{
+		cout << "Nie udalo sie przechowac macierzy w bazie danych" << endl;
+	}
 }
 
 int main()
